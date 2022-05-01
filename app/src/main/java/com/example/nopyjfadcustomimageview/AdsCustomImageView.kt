@@ -11,8 +11,6 @@ import com.bumptech.glide.load.DataSource
 import com.bumptech.glide.load.engine.GlideException
 import com.bumptech.glide.request.RequestListener
 import com.bumptech.glide.request.target.Target
-import kotlin.math.max
-import kotlin.math.min
 
 class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageView(context, attr) {
 
@@ -31,13 +29,15 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
 
         override fun onFinish() {
             stillCountDownAdImpressed = false
-            onAdsImpressFollowHeight(
+            onAdsImpress(
                 {
-                    listener?.onAdImpression()
-                    adImpressed = true
+                    if (!adImpressed) {
+                        listener?.onAdImpression(adImageUrl)
+                        adImpressed = true
+                    }
                 },
                 {
-                    adImpressed = false
+                    // do nothing
                 }
             )
         }
@@ -61,7 +61,7 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
                     target: Target<Drawable>?,
                     isFirstResource: Boolean
                 ): Boolean {
-                    listener?.onAdLoadFailed()
+                    listener?.onAdLoadFailed(adImageUrl)
                     return false
                 }
 
@@ -72,7 +72,8 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
                     dataSource: DataSource?,
                     isFirstResource: Boolean
                 ): Boolean {
-                    listener?.onAdLoaded()
+                    listener?.onAdLoaded(adImageUrl)
+                    onAdAppearOnScreen()
                     return false
                 }
 
@@ -81,11 +82,11 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
     }
 
     fun onAdAppearOnScreen() {
-        onAdsImpressFollowHeight(
+        onAdsImpress(
             {
-                if (!adImpressed) {
-                    stillCountDownAdImpressed = true
+                if (!adImpressed && !stillCountDownAdImpressed) {
                     impressionCountDown.start()
+                    stillCountDownAdImpressed = true
                 }
             },
             {
@@ -95,44 +96,36 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
     }
 
     private fun onAdDisappearOnScreen() {
+        stillCountDownAdImpressed = false
         impressionCountDown.cancel()
     }
 
-    private fun onAdsImpressFollowHeight(
+    private fun onAdsImpress(
         onAdAppear: () -> Unit,
         onAdDisappear: () -> Unit
     ) {
-//        val itemRect = Rect()
-//        val itemView = this.getLocalVisibleRect(itemRect)
-//
-//        val yTopPosItem = itemRect.top
-//        val yBottomPosItem = itemRect.bottom
-//        val heightItem = itemRect.height()
-//
-//        val yTopPosScreen = 0
-//        val yBottomPosScreen = context.resources.displayMetrics.heightPixels
-//
-//        val maxTopPos = max(0, max(yTopPosScreen, yTopPosItem))
-//        val minBottomPos = max(0, min(yBottomPosScreen, yBottomPosItem))
-//
-//        val itemHeightPercentage = (minBottomPos - maxTopPos) / heightItem * 100
-//
-//        if (itemView && itemHeightPercentage >= 50) {
-//            onAdAppear()
-//        } else {
-//            onAdDisappear()
-//        }
-
         val itemRect = Rect()
         val isParentViewEmpty = this.getLocalVisibleRect(itemRect)
+        if (!isParentViewEmpty) {
+            onAdDisappear()
+            return
+        }
+
         val visibleWidth = itemRect.width().toDouble()
         val visibleHeight = itemRect.height().toDouble()
+
         val width = this.measuredWidth
         val height = this.measuredHeight
+
+        if (width == 0 || height == 0) {
+            onAdDisappear()
+            return
+        }
+
         val viewVisibleWidthPercentage = visibleWidth / width * 100
         val viewVisibleHeightPercentage = visibleHeight / height * 100
 
-        if (isParentViewEmpty && viewVisibleWidthPercentage >= 50 && viewVisibleHeightPercentage >= 50) {
+        if (viewVisibleWidthPercentage >= 50 && viewVisibleHeightPercentage >= 50) {
             onAdAppear()
         } else {
             onAdDisappear()
@@ -140,14 +133,14 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
     }
 
     override fun hasOnClickListeners(): Boolean {
-        listener?.onAdClick()
+        listener?.onAdClick(adImageUrl)
         return super.hasOnClickListeners()
     }
 }
 
 interface AdListener {
-    fun onAdLoaded()
-    fun onAdLoadFailed()
-    fun onAdClick()
-    fun onAdImpression()
+    fun onAdLoaded(adImageUrl: String)
+    fun onAdLoadFailed(adImageUrl: String)
+    fun onAdClick(adImageUrl: String)
+    fun onAdImpression(adImageUrl: String)
 }
