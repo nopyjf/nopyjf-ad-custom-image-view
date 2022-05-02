@@ -1,76 +1,105 @@
 package com.example.nopyjfadcustomimageview
 
-import android.graphics.Rect
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager.widget.ViewPager
 
 class RecyclerViewAdapter(
     private var listener: AdListener,
     private var data: List<String> = arrayListOf()
-) : RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder>() {
+) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(
         parent: ViewGroup,
         viewType: Int
-    ): RecyclerViewAdapter.ViewHolder {
+    ): RecyclerView.ViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(
             R.layout.item_recycler_view,
             parent,
             false
         )
-        return ViewHolder(view, listener)
+        return PagerViewHolder(view)
     }
 
-    override fun onBindViewHolder(holder: RecyclerViewAdapter.ViewHolder, position: Int) {
-        holder.bind(data[position])
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (holder) {
+            is PagerViewHolder -> holder.bind(data)
+        }
     }
 
-    override fun getItemCount() = data.size
+    override fun getItemCount() = 10
 
-    override fun onViewAttachedToWindow(holder: ViewHolder) {
+    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
         super.onViewAttachedToWindow(holder)
         when (holder) {
-            is RecyclerViewAdapter.ViewHolder -> holder.onAdImpress()
+            is RecyclerViewAdapter.PagerViewHolder -> holder.bind(data)
         }
     }
 
-    override fun onAttachedToRecyclerView(recyclerView: RecyclerView) {
-        super.onAttachedToRecyclerView(recyclerView)
-        val lm = recyclerView.layoutManager as LinearLayoutManager
-        val firstPosition = lm.findFirstVisibleItemPosition()
-        val lastPosition = lm.findLastVisibleItemPosition()
-        val globalVisibleRect = Rect()
-        recyclerView.getGlobalVisibleRect(globalVisibleRect)
-        for (pos in firstPosition..lastPosition) {
-            recyclerView.findViewHolderForAdapterPosition(pos).let { holder ->
-                when (holder) {
-                    is RecyclerViewAdapter.ViewHolder -> holder.onAdImpress()
-                }
-            }
-        }
-    }
-
-    inner class ViewHolder(
+    inner class PagerViewHolder(
         view: View,
-        private val listener: AdListener
     ) : RecyclerView.ViewHolder(view) {
 
-        private val adsCustomImageView =
-            itemView.findViewById<AdsCustomImageView>(R.id.adsCustomImageView)
+        private val customViewPager =
+            itemView.findViewById<ViewPager>(R.id.custom_view_pager)
 
-        fun bind(url: String) {
-            adsCustomImageView.apply {
-                setAdListener(listener)
-                setAdImageUrl(url)
-                loadingAdImageUrl()
-            }
-        }
+        private val viewPagerAdapter = CustomViewPagerAdapter(
+            data,
+            listener
+        )
 
         fun onAdImpress() {
-            adsCustomImageView.onAdAppearOnScreen()
+            val view = customViewPager.getChildAt(customViewPager.currentItem)
+            val imageView =
+                view.findViewById<AdsCustomImageView>(R.id.ads_custom_image_view)
+            imageView.onAdAppearOnScreen()
+        }
+
+        fun bind(data: List<String>) {
+            viewPagerAdapter.setData(data)
+            customViewPager.apply {
+                adapter = viewPagerAdapter
+                offscreenPageLimit = 2
+                clipToPadding = false
+                setPadding(
+                    resources.getDimensionPixelSize(R.dimen.view_pager_padding),
+                    0,
+                    resources.getDimensionPixelSize(R.dimen.view_pager_padding),
+                    0
+                )
+                pageMargin = resources.getDimensionPixelSize(R.dimen.view_pager_page_margin)
+
+                addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
+
+                    override fun onPageScrolled(
+                        position: Int,
+                        positionOffset: Float,
+                        positionOffsetPixels: Int
+                    ) {
+                        Log.d("MINT3", "${position}, ${positionOffset}, ${positionOffsetPixels}")
+
+                        val view = getChildAt(position)
+                        val imageView =
+                            view.findViewById<AdsCustomImageView>(R.id.ads_custom_image_view)
+                        imageView.onAdAppearOnScreen()
+                    }
+
+                    override fun onPageSelected(position: Int) {
+                        Log.d("MINT4", "${position}")
+                        val view = getChildAt(position)
+                        val imageView =
+                            view.findViewById<AdsCustomImageView>(R.id.ads_custom_image_view)
+                        imageView.onAdAppearOnScreen()
+                    }
+
+                    override fun onPageScrollStateChanged(state: Int) {
+                        // do nothing
+                    }
+                })
+            }
         }
     }
 }

@@ -5,6 +5,7 @@ import android.graphics.Rect
 import android.graphics.drawable.Drawable
 import android.os.CountDownTimer
 import android.util.AttributeSet
+import android.util.Log
 import androidx.appcompat.widget.AppCompatImageView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -73,7 +74,6 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
                     isFirstResource: Boolean
                 ): Boolean {
                     listener?.onAdLoaded(adImageUrl)
-                    onAdAppearOnScreen()
                     return false
                 }
 
@@ -105,8 +105,8 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
         onAdDisappear: () -> Unit
     ) {
         val itemRect = Rect()
-        val isParentViewEmpty = this.getLocalVisibleRect(itemRect)
-        if (!isParentViewEmpty) {
+        val isParentViewVisible = this.getLocalVisibleRect(itemRect)
+        if (!isParentViewVisible) {
             onAdDisappear()
             return
         }
@@ -124,6 +124,11 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
 
         val viewVisibleWidthPercentage = visibleWidth / width * 100
         val viewVisibleHeightPercentage = visibleHeight / height * 100
+
+        Log.d(
+            "MINT2",
+            "${width}, ${height}, ${viewVisibleWidthPercentage}, ${viewVisibleHeightPercentage}"
+        )
 
         if (viewVisibleWidthPercentage >= 50 && viewVisibleHeightPercentage >= 50) {
             onAdAppear()

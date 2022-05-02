@@ -3,6 +3,7 @@ package com.example.nopyjfadcustomimageview
 import android.graphics.Rect
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 
@@ -14,11 +15,11 @@ class MainActivity : AppCompatActivity(), AdListener {
         "https://picsum.photos/id/1/360/180",
         "https://picsum.photos/id/2/360/180",
         "https://picsum.photos/id/3/360/180",
-        "https://picsum.photos/id/3/360/180",
-        "https://picsum.photos/id/3/360/180",
-        "https://picsum.photos/id/3/360/180",
-        "https://picsum.photos/id/3/360/180",
-        "https://picsum.photos/id/3/360/180"
+        "https://picsum.photos/id/4/360/180",
+        "https://picsum.photos/id/5/360/180",
+        "https://picsum.photos/id/6/360/180",
+        "https://picsum.photos/id/7/360/180",
+        "https://picsum.photos/id/8/360/180"
     )
 
     private val recyclerViewAdapter = RecyclerViewAdapter(this, urls)
@@ -67,13 +68,14 @@ class MainActivity : AppCompatActivity(), AdListener {
     override fun onAdImpression(adImageUrl: String) {
         if (!urlImpressedList.contains(adImageUrl)) {
             // call APIs
+            Log.d("MINT1", adImageUrl)
             urlImpressedList.add(adImageUrl) // do on call impress api success
         }
     }
 
     private fun getItemOnHolder(
         recyclerView: RecyclerView,
-        doSomething: (holder: RecyclerViewAdapter.ViewHolder) -> Unit
+        doSomething: (holder: RecyclerViewAdapter.PagerViewHolder) -> Unit
     ) {
         val lm = recyclerView.layoutManager as LinearLayoutManager
         val firstPosition = lm.findFirstVisibleItemPosition()
@@ -83,7 +85,7 @@ class MainActivity : AppCompatActivity(), AdListener {
         for (pos in firstPosition..lastPosition) {
             recyclerView.findViewHolderForAdapterPosition(pos).let { holder ->
                 when (holder) {
-                    is RecyclerViewAdapter.ViewHolder -> doSomething(holder)
+                    is RecyclerViewAdapter.PagerViewHolder -> doSomething(holder)
                 }
             }
         }
