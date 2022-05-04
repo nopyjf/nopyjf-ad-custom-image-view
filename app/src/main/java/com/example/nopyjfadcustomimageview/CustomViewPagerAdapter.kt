@@ -1,17 +1,28 @@
 package com.example.nopyjfadcustomimageview
 
+import android.database.DataSetObserver
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.viewpager.widget.PagerAdapter
+import com.bumptech.glide.Glide
 
 class CustomViewPagerAdapter(
-    private var items: List<String> = listOf(),
-    private val listener: AdListener
+    private val listener: AdListener,
+    private var items: List<String> = listOf()
 ) : PagerAdapter() {
+
+    private var ivList: HashMap<Int, AdsCustomImageView> = hashMapOf()
 
     fun setData(data: List<String>) {
         items = data
+        notifyDataSetChanged()
+    }
+
+    fun getAdImageView(position: Int): AdsCustomImageView? {
+        if (position >= ivList.size) return null
+        return ivList[position]
     }
 
     override fun instantiateItem(container: ViewGroup, position: Int): Any {
@@ -23,6 +34,7 @@ class CustomViewPagerAdapter(
             setAdListener(listener)
             setAdImageUrl(items[position])
             loadingAdImageUrl()
+            ivList[position] = this
         }
         container.addView(view)
         return view

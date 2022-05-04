@@ -6,6 +6,7 @@ import android.graphics.drawable.Drawable
 import android.os.CountDownTimer
 import android.util.AttributeSet
 import android.util.Log
+import android.view.ViewTreeObserver
 import androidx.appcompat.widget.AppCompatImageView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.DataSource
@@ -42,6 +43,20 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
                 }
             )
         }
+    }
+
+    fun onAdAppearOnScreen() {
+        onAdsImpress(
+            {
+                if (!adImpressed && !stillCountDownAdImpressed) {
+                    impressionCountDown.start()
+                    stillCountDownAdImpressed = true
+                }
+            },
+            {
+                onAdDisappearOnScreen()
+            }
+        )
     }
 
     fun setAdListener(listener: AdListener) {
@@ -81,21 +96,7 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
             .into(this)
     }
 
-    fun onAdAppearOnScreen() {
-        onAdsImpress(
-            {
-                if (!adImpressed && !stillCountDownAdImpressed) {
-                    impressionCountDown.start()
-                    stillCountDownAdImpressed = true
-                }
-            },
-            {
-                onAdDisappearOnScreen()
-            }
-        )
-    }
-
-    private fun onAdDisappearOnScreen() {
+    fun onAdDisappearOnScreen() {
         stillCountDownAdImpressed = false
         impressionCountDown.cancel()
     }
@@ -124,11 +125,6 @@ class AdsCustomImageView(context: Context, attr: AttributeSet) : AppCompatImageV
 
         val viewVisibleWidthPercentage = visibleWidth / width * 100
         val viewVisibleHeightPercentage = visibleHeight / height * 100
-
-        Log.d(
-            "MINT2",
-            "${width}, ${height}, ${viewVisibleWidthPercentage}, ${viewVisibleHeightPercentage}"
-        )
 
         if (viewVisibleWidthPercentage >= 50 && viewVisibleHeightPercentage >= 50) {
             onAdAppear()

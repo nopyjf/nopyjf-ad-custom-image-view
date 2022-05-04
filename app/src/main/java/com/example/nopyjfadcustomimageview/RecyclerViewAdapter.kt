@@ -9,7 +9,7 @@ import androidx.viewpager.widget.ViewPager
 
 class RecyclerViewAdapter(
     private var listener: AdListener,
-    private var data: List<String> = arrayListOf()
+    private var data: List<List<String>> = arrayListOf()
 ) : RecyclerView.Adapter<RecyclerView.ViewHolder>() {
 
     override fun onCreateViewHolder(
@@ -26,36 +26,26 @@ class RecyclerViewAdapter(
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when (holder) {
-            is PagerViewHolder -> holder.bind(data)
+            is PagerViewHolder -> holder.bind(data[position])
         }
     }
 
-    override fun getItemCount() = 10
-
-    override fun onViewAttachedToWindow(holder: RecyclerView.ViewHolder) {
-        super.onViewAttachedToWindow(holder)
-        when (holder) {
-            is RecyclerViewAdapter.PagerViewHolder -> holder.bind(data)
-        }
-    }
+    override fun getItemCount() = data.size
 
     inner class PagerViewHolder(
         view: View,
     ) : RecyclerView.ViewHolder(view) {
 
-        private val customViewPager =
-            itemView.findViewById<ViewPager>(R.id.custom_view_pager)
+        private val customViewPager = itemView.findViewById<CustomViewPager>(R.id.custom_view_pager)
 
-        private val viewPagerAdapter = CustomViewPagerAdapter(
-            data,
-            listener
-        )
+        private val viewPagerAdapter = CustomViewPagerAdapter(listener)
+
+        private var swiperState: Int = 0
+        private var currentSelectedItem: Int = 0
+        private var nextSelectedItem: Int = 0
 
         fun onAdImpress() {
-            val view = customViewPager.getChildAt(customViewPager.currentItem)
-            val imageView =
-                view.findViewById<AdsCustomImageView>(R.id.ads_custom_image_view)
-            imageView.onAdAppearOnScreen()
+            viewPagerAdapter.getAdImageView(nextSelectedItem)?.onAdAppearOnScreen()
         }
 
         fun bind(data: List<String>) {
@@ -74,29 +64,57 @@ class RecyclerViewAdapter(
 
                 addOnPageChangeListener(object : ViewPager.OnPageChangeListener {
 
+                    override fun onPageScrollStateChanged(state: Int) {
+                        swiperState = state
+                    }
+
                     override fun onPageScrolled(
                         position: Int,
                         positionOffset: Float,
                         positionOffsetPixels: Int
                     ) {
-                        Log.d("MINT3", "${position}, ${positionOffset}, ${positionOffsetPixels}")
-
-                        val view = getChildAt(position)
-                        val imageView =
-                            view.findViewById<AdsCustomImageView>(R.id.ads_custom_image_view)
-                        imageView.onAdAppearOnScreen()
+                        if (swiperState != ViewPager.SCROLL_STATE_SETTLING) {
+                            if (position == currentSelectedItem) {
+                                if (positionOffset >= 0.5) {
+                                    if (position + 1 != nextSelectedItem) {
+                                        nextSelectedItem = position + 1
+                                        viewPagerAdapter
+                                            .getAdImageView(nextSelectedItem)
+                                            ?.onAdAppearOnScreen()
+                                    }
+                                } else {
+                                    if (position != nextSelectedItem) {
+                                        nextSelectedItem = position
+                                        viewPagerAdapter
+                                            .getAdImageView(nextSelectedItem)
+                                            ?.onAdDisappearOnScreen()
+                                    }
+                                }
+                            } else {
+                                if (positionOffset >= 0.5) {
+                                    if (position + 1 != nextSelectedItem) {
+                                        nextSelectedItem = position + 1
+                                        viewPagerAdapter
+                                            .getAdImageView(nextSelectedItem)
+                                            ?.onAdDisappearOnScreen()
+                                    }
+                                } else {
+                                    if (position != nextSelectedItem) {
+                                        nextSelectedItem = position
+                                        viewPagerAdapter
+                                            .getAdImageView(nextSelectedItem)
+                                            ?.onAdAppearOnScreen()
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     override fun onPageSelected(position: Int) {
-                        Log.d("MINT4", "${position}")
-                        val view = getChildAt(position)
-                        val imageView =
-                            view.findViewById<AdsCustomImageView>(R.id.ads_custom_image_view)
-                        imageView.onAdAppearOnScreen()
-                    }
-
-                    override fun onPageScrollStateChanged(state: Int) {
-                        // do nothing
+                        currentSelectedItem = position
+                        nextSelectedItem = position
+                        viewPagerAdapter.getAdImageView(position)?.onAdDisappearOnScreen()
+                        viewPagerAdapter.getAdImageView(position)?.onAdAppearOnScreen()
                     }
                 })
             }
